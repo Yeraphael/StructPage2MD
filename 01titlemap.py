@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-将网页抓取为 HTML，并转换成 Markdown 文件
-适用于你给的百度医典页面，也可复用到多数普通网页
+将百度医典网页抓取为 HTML，并转换成 Markdown 文件
+同时把：
+概述、原因、就医、诊断、治疗、日常
+映射成 Markdown 一级标题
 
 安装依赖：
     pip install requests beautifulsoup4 markdownify lxml
@@ -15,7 +17,7 @@ from bs4 import BeautifulSoup
 from markdownify import markdownify as md
 
 
-URL = "https://www.baidu.com/bh/dict/ydzz_10810716394081235114?from=dicta&sf_ref=med_pc&sf_ch=ch_med_pc"
+URL = "https://www.baidu.com/bh/dict/ydxx_7971341401879355500?contentid=ydxx_7971341401879355500&sf_ch=ch_baike&from=dicta&isPageHome=1"
 HTML_OUTPUT = "baidu_yidian_raw.html"
 MD_OUTPUT = "baidu_yidian.md"
 
@@ -29,13 +31,14 @@ HEADERS = {
     "Referer": "https://www.baidu.com/",
 }
 
+SECTION_TITLES = ["概述", "原因", "就医", "诊断", "治疗", "日常"]
+
 
 def fetch_html(url: str) -> str:
     """抓取网页 HTML"""
     resp = requests.get(url, headers=HEADERS, timeout=30)
     resp.raise_for_status()
 
-    # 尽量修正编码，避免中文乱码
     if not resp.encoding or resp.encoding.lower() == "iso-8859-1":
         resp.encoding = resp.apparent_encoding
 
@@ -43,14 +46,20 @@ def fetch_html(url: str) -> str:
 
 
 def save_text(content: str, file_path: str) -> None:
-    """保存文本到文件"""
     Path(file_path).write_text(content, encoding="utf-8")
+
+
+def clean_soup(soup: BeautifulSoup) -> BeautifulSoup:
+    """清理无关标签"""
+    for tag in soup(["script", "style", "noscript", "iframe", "svg", "form", "button", "input"]):
+        tag.decompose()
+
+    return soup
 
 
 def pick_main_content(soup: BeautifulSoup):
     """
-    尽量选正文区域。
-    没找到就退回 body。
+    尽量选正文区域；找不到就退回 body
     """
     candidates = [
         {"id": re.compile(r"(content|main|article|detail|lemma)", re.I)},
@@ -69,62 +78,86 @@ def pick_main_content(soup: BeautifulSoup):
     return soup.body if soup.body else soup
 
 
-def clean_soup(soup: BeautifulSoup) -> BeautifulSoup:
-    """清理无关标签"""
-    for tag in soup([
-        "script", "style", "noscript", "iframe", "svg",
-        "form", "button", "input", "footer", "nav"
-    ]):
-        tag.decompose()
+def normalize_special_headings(markdown: str) -> str:
+    """
+    把【概述、原因、就医、诊断、治疗、日常】规范成 Markdown 一级标题
+    兼容这些情况：
+    - 概述
+    - # 概述
+    - ## 概述
+    - ### 概述
+    - **概述**
+    - 【概述】
+    """
+    lines = markdown.splitlines()
+    new_lines = []
 
-    # 去掉常见广告/无用区域
-    for tag in soup.find_all(
-        attrs={
-            "class": re.compile(r"(advert|ad-|ads|nav|footer|toolbar|recommend)", re.I)
-        }
-    ):
-        try:
-            tag.decompose()
-        except Exception:
-            pass
+    for line in lines:
+        stripped = line.strip()
 
-    return soup
+        matched = False
+        for title in SECTION_TITLES:
+            patterns = [
+                rf"^#+\s*{re.escape(title)}\s*$",          # # 概述 / ## 概述
+                rf"^\*\*{re.escape(title)}\*\*\s*$",      # **概述**
+                rf"^【\s*{re.escape(title)}\s*】\s*$",     # 【概述】
+                rf"^{re.escape(title)}\s*$",              # 概述
+            ]
+            if any(re.match(p, stripped) for p in patterns):
+                new_lines.append(f"# {title}")
+                matched = True
+                break
+
+        if not matched:
+            new_lines.append(line)
+
+    markdown = "\n".join(new_lines)
+
+    # 避免标题前后空行混乱
+    markdown = re.sub(r"\n{3,}", "\n\n", markdown)
+
+    # 确保一级标题前面有空行（文档第一个标题除外）
+    markdown = re.sub(r"([^\n])\n(# )", r"\1\n\n\2", markdown)
+
+    return markdown.strip()
 
 
 def html_to_markdown(html: str) -> str:
-    """将 HTML 转成 Markdown"""
+    """HTML 转 Markdown"""
     soup = BeautifulSoup(html, "lxml")
     soup = clean_soup(soup)
     main_node = pick_main_content(soup)
 
-    # 转成字符串后再 markdownify
     main_html = str(main_node)
 
     markdown = md(
         main_html,
-        heading_style="ATX",   # # ## ### 风格标题
+        heading_style="ATX",
         bullets="-",
-        strip=["span"],        # 去掉无意义 span
+        strip=["span"],
     )
 
-    # 简单清洗 Markdown
-    markdown = re.sub(r"\n{3,}", "\n\n", markdown)
     markdown = re.sub(r"[ \t]+\n", "\n", markdown)
-    markdown = markdown.strip()
+    markdown = re.sub(r"\n{3,}", "\n\n", markdown).strip()
+
+    # 把指定栏目映射成一级标题
+    markdown = normalize_special_headings(markdown)
 
     title = soup.title.get_text(strip=True) if soup.title else "网页内容"
     markdown = f"# {title}\n\n来源：{URL}\n\n{markdown}\n"
+    markdown = re.sub(r"\n{3,}", "\n\n", markdown)
+
     return markdown
 
 
 def main():
-    print("1) 正在抓取网页 HTML ...")
+    print("1) 正在抓取网页 HTML...")
     html = fetch_html(URL)
 
     print(f"2) 保存原始 HTML 到: {HTML_OUTPUT}")
     save_text(html, HTML_OUTPUT)
 
-    print("3) 正在转换为 Markdown ...")
+    print("3) 正在转换为 Markdown...")
     markdown = html_to_markdown(html)
 
     print(f"4) 保存 Markdown 到: {MD_OUTPUT}")
