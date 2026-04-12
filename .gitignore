@@ -1,0 +1,76 @@
+# =========================
+# OS files
+# =========================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# =========================
+# IDE / Editor
+# =========================
+.idea/
+.vscode/
+*.iml
+
+# =========================
+# Python
+# =========================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# Packaging
+build/
+dist/
+.eggs/
+*.egg-info/
+pip-wheel-metadata/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Test / cache
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+.coverage
+.coverage.*
+htmlcov/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Logs
+*.log
+logs/
+
+# Local database
+*.sqlite3
+*.db
+
+# Secrets / env files
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+
+# Temp files
+tmp/
+temp/
+*.tmp
+
+# =========================
+# Project generated outputs
+# 按你的项目情况补充
+# =========================
+baidu_yidian.md
+baidu_yidian_raw.html
