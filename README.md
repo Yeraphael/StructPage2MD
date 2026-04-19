@@ -1,60 +1,100 @@
 # StructPage2MD
 
-StructPage2MD 是一个面向**结构化网页内容提取**的 Python 工具。  
-它通过 **Playwright** 渲染动态页面，抓取完整 HTML，并将正文内容转换为清晰、可读、适合存档或二次处理的 **Markdown** 文件。
+`StructPage2MD` 用来把结构化网页内容整理成更适合归档和后续处理的数据文件。
 
-这个项目特别适合以下场景：
+这次已经把原来分散在 `01` 和 `04` 的两部分能力整合到了新的 [05webtomd_faq_pipeline.py](./05webtomd_faq_pipeline.py)：
 
-- 医疗百科 / 医典类页面抓取
-- 动态渲染网页内容转 Markdown
-- 知识库原始网页归档
-- 后续用于 RAG / 检索 / 文档整理的数据预处理
+- 网页正文提取并转换为 Markdown
+- 高频 FAQ 问答对提取并导出为 JSON / Markdown
+- 输出文件统一写入 `data/` 目录
 
----
+## 当前脚本说明
 
-## Features
+- `01titlemap.py`
+  早期版本：抓取网页并转换为 Markdown。
+- `04merge2_3.py`
+  早期版本：渲染页面并抽取 FAQ。
+- `05webtomd_faq_pipeline.py`
+  一体化版本：同时完成网页转 Markdown 与 FAQ 提取，并统一输出目录。
 
-- 支持 **动态网页渲染**，不再局限于 `requests` 获取的静态 HTML
-- 自动保存 **渲染后的原始 HTML**
-- 按网页结构抽取正文，而不是粗暴整页转 Markdown
-- 支持将“概述、原因、就医、诊断、治疗、日常”等内容整理为**一级标题**
-- 支持单独抽取 **患者最常问的问题（FAQ）** 问答对
-- 适合后续接入知识库、RAG、搜索索引或内容存档流程
+## 目录结构
 
----
+```text
+webTomd/
+├─ 01titlemap.py
+├─ 02webtomd_extract_html.py
+├─ 03extract_faq.py
+├─ 04merge2_3.py
+├─ 05webtomd_faq_pipeline.py
+├─ data/
+│  ├─ baidu_yidian_raw.html
+│  ├─ baidu_yidian.md
+│  ├─ faq_rendered_snapshot.html
+│  ├─ faq_qa.json
+│  └─ faq_qa.md
+└─ README.md
+```
 
-## Why this project
+## 依赖
 
-很多内容页表面上看是普通网页，但实际内容常常有这些问题：
-
-- 关键内容由前端 JS 动态渲染
-- 直接抓 HTML 会漏掉 FAQ、折叠区、懒加载内容
-- 整页转 Markdown 会把导航、按钮、广告、推荐内容一起带进去
-- 页面明明有清晰的章节结构，但最终导出的文档层级很乱
-
-StructPage2MD 的目标，就是把这类网页转成**更适合阅读和机器处理的 Markdown 文档**。
-
----
-
-## Supported extraction strategy
-
-当前版本采用以下策略：
-
-1. 使用 Playwright 渲染页面
-2. 等待网络稳定并触发懒加载
-3. 尝试展开“更多 / 展开全部”等折叠内容
-4. 保存渲染后的完整 HTML
-5. 基于页面可见文本和 DOM 结构进行章节切分
-6. 单独提取 FAQ 问答对
-7. 输出结构化 Markdown
-
----
-
-## Installation
-
-### 1. Clone repository
+基础运行：
 
 ```bash
-git clone https://github.com/yourname/StructPage2MD.git
-cd StructPage2MD
+pip install requests beautifulsoup4
 ```
+
+如果你希望脚本直接在线渲染页面并抓 FAQ，还需要：
+
+```bash
+pip install playwright
+playwright install chromium
+```
+
+## 使用方式
+
+### 1. 标准运行
+
+有 Playwright 时，直接执行：
+
+```bash
+python 05webtomd_faq_pipeline.py
+```
+
+默认会：
+
+- 抓取网页原始 HTML
+- 生成网页 Markdown
+- 渲染页面并抽取 FAQ
+- 将结果统一写入 `data/`
+
+### 2. 离线测试 / 使用已有 HTML
+
+如果本地已经保存了原始 HTML 和渲染后 HTML，可以直接离线跑：
+
+```bash
+python 05webtomd_faq_pipeline.py ^
+  --source-html .\baidu_yidian_raw1.html ^
+  --rendered-html .\faq_rendered_snapshot1.html ^
+  --output-dir .\data
+```
+
+这个模式适合：
+
+- 没装 Playwright 时先验证流程
+- 使用已有样本页面复现输出
+- 调试 FAQ 解析逻辑
+
+## 输出文件
+
+运行完成后，默认会在 `data/` 下生成：
+
+- `baidu_yidian_raw.html`：原始网页 HTML
+- `baidu_yidian.md`：整理后的网页 Markdown
+- `faq_rendered_snapshot.html`：FAQ 抽取所用的渲染后 HTML
+- `faq_qa.json`：FAQ 问答对 JSON
+- `faq_qa.md`：FAQ 问答对 Markdown
+
+## 说明
+
+- FAQ 抽取对页面结构有一定依赖，如果百度页面类名变化，需要同步更新选择器。
+- 当前项目保留 `01` 到 `04` 作为历史脚本，后续推荐优先使用 `05`。

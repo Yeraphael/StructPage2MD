@@ -68,9 +68,23 @@ tmp/
 temp/
 *.tmp
 
-# =========================
-# Project generated outputs
-# 按你的项目情况补充
-# =========================
-baidu_yidian.md
-baidu_yidian_raw.html
+# Root-level generated outputs from old scripts
+/baidu_yidian.md
+/baidu_yidian_raw.html
+/baidu_yidian1.md
+/baidu_yidian_raw1.html
+/faq_rendered_snapshot.html
+/faq_rendered_snapshot1.html
+/faq_qa.json
+/faq_qa.md
+/faq_qa1.json
+/faq_qa1.md
+
+# Playwright / runtime cache
+playwright-report/
+.playwright/
+
+# Temporary exports
+*.html~
+*.md~
+*.json~

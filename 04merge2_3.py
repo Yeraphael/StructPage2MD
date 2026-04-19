@@ -21,11 +21,11 @@ from bs4 import BeautifulSoup
 from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
 
 
-URL = "https://www.baidu.com/bh/dict/ydzz_10913524287527321158?from=dicta&sf_ref=med_pc&sf_ch=ch_med_pc"
+URL = "https://www.baidu.com/bh/dict/ydzz_13484531980504204614?from=dicta&sf_ref=med_pc&sf_ch=ch_med_pc"
 
-HTML_OUTPUT = "faq_rendered_snapshot.html"
-JSON_OUTPUT = "faq_qa.json"
-MD_OUTPUT = "faq_qa.md"
+HTML_OUTPUT = "faq_rendered_snapshot1.html"
+JSON_OUTPUT = "faq_qa1.json"
+MD_OUTPUT = "faq_qa1.md"
 
 
 def clean_text(text: str) -> str:

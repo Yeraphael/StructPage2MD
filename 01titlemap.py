@@ -17,9 +17,9 @@ from bs4 import BeautifulSoup
 from markdownify import markdownify as md
 
 
-URL = "https://www.baidu.com/bh/dict/ydxx_7971341401879355500?contentid=ydxx_7971341401879355500&sf_ch=ch_baike&from=dicta&isPageHome=1"
-HTML_OUTPUT = "baidu_yidian_raw.html"
-MD_OUTPUT = "baidu_yidian.md"
+URL = "https://www.baidu.com/bh/dict/ydzz_13484531980504204614?from=dicta&sf_ref=med_pc&sf_ch=ch_med_pc"
+HTML_OUTPUT = "baidu_yidian_raw1.html"
+MD_OUTPUT = "baidu_yidian1.md"
 
 HEADERS = {
     "User-Agent": (
